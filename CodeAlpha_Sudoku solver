@@ -1,0 +1,186 @@
+#include <iostream>
+#include <iomanip>
+#include <limits>
+
+using namespace std;
+
+const int SIZE = 9;
+
+// ─────────────────────────────────────────
+//  Print the Sudoku grid nicely
+// ─────────────────────────────────────────
+void printGrid(int grid[SIZE][SIZE]) {
+    cout << "\n  +-------+-------+-------+\n";
+    for (int row = 0; row < SIZE; row++) {
+        cout << "  | ";
+        for (int col = 0; col < SIZE; col++) {
+            if (grid[row][col] == 0)
+                cout << ". ";
+            else
+                cout << grid[row][col] << " ";
+
+            if ((col + 1) % 3 == 0) cout << "| ";
+        }
+        cout << "\n";
+        if ((row + 1) % 3 == 0)
+            cout << "  +-------+-------+-------+\n";
+    }
+}
+
+// ─────────────────────────────────────────
+//  Check if placing num at (row, col) is valid
+// ─────────────────────────────────────────
+bool isValid(int grid[SIZE][SIZE], int row, int col, int num) {
+    // Check row
+    for (int c = 0; c < SIZE; c++) {
+        if (grid[row][c] == num) return false;
+    }
+
+    // Check column
+    for (int r = 0; r < SIZE; r++) {
+        if (grid[r][col] == num) return false;
+    }
+
+    // Check 3x3 subgrid
+    int startRow = (row / 3) * 3;
+    int startCol = (col / 3) * 3;
+    for (int r = startRow; r < startRow + 3; r++) {
+        for (int c = startCol; c < startCol + 3; c++) {
+            if (grid[r][c] == num) return false;
+        }
+    }
+
+    return true;
+}
+
+// ─────────────────────────────────────────
+//  Backtracking solver
+// ─────────────────────────────────────────
+bool solveSudoku(int grid[SIZE][SIZE]) {
+    for (int row = 0; row < SIZE; row++) {
+        for (int col = 0; col < SIZE; col++) {
+
+            // Find an empty cell (marked as 0)
+            if (grid[row][col] == 0) {
+
+                // Try numbers 1–9
+                for (int num = 1; num <= 9; num++) {
+                    if (isValid(grid, row, col, num)) {
+                        grid[row][col] = num;           // Place number
+
+                        if (solveSudoku(grid)) return true; // Recurse
+
+                        grid[row][col] = 0;             // Backtrack
+                    }
+                }
+
+                return false; // No valid number found, trigger backtrack
+            }
+        }
+    }
+    return true; // All cells filled successfully
+}
+
+// ─────────────────────────────────────────
+//  Check if the initial puzzle input is valid
+// ─────────────────────────────────────────
+bool isInitialGridValid(int grid[SIZE][SIZE]) {
+    for (int row = 0; row < SIZE; row++) {
+        for (int col = 0; col < SIZE; col++) {
+            if (grid[row][col] != 0) {
+                int temp = grid[row][col];
+                grid[row][col] = 0; // Temporarily remove to check
+                if (!isValid(grid, row, col, temp)) {
+                    grid[row][col] = temp;
+                    return false;
+                }
+                grid[row][col] = temp;
+            }
+        }
+    }
+    return true;
+}
+
+// ─────────────────────────────────────────
+//  Input the puzzle from user
+// ─────────────────────────────────────────
+void inputGrid(int grid[SIZE][SIZE]) {
+    cout << "\nEnter the Sudoku puzzle row by row.\n";
+    cout << "Use 0 for empty cells. (e.g: 5 3 0 0 7 0 0 0 0)\n\n";
+
+    for (int row = 0; row < SIZE; row++) {
+        cout << "Row " << row + 1 << ": ";
+        for (int col = 0; col < SIZE; col++) {
+            while (!(cin >> grid[row][col]) ||
+                    grid[row][col] < 0 || grid[row][col] > 9) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "❌ Invalid! Enter digits 0-9 only. Row " << row + 1 << ": ";
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+//  Preset puzzle for demo mode
+// ─────────────────────────────────────────
+void loadSamplePuzzle(int grid[SIZE][SIZE]) {
+    int sample[SIZE][SIZE] = {
+        {5, 3, 0, 0, 7, 0, 0, 0, 0},
+        {6, 0, 0, 1, 9, 5, 0, 0, 0},
+        {0, 9, 8, 0, 0, 0, 0, 6, 0},
+        {8, 0, 0, 0, 6, 0, 0, 0, 3},
+        {4, 0, 0, 8, 0, 3, 0, 0, 1},
+        {7, 0, 0, 0, 2, 0, 0, 0, 6},
+        {0, 6, 0, 0, 0, 0, 2, 8, 0},
+        {0, 0, 0, 4, 1, 9, 0, 0, 5},
+        {0, 0, 0, 0, 8, 0, 0, 7, 9}
+    };
+    for (int r = 0; r < SIZE; r++)
+        for (int c = 0; c < SIZE; c++)
+            grid[r][c] = sample[r][c];
+}
+
+// ─────────────────────────────────────────
+//  Main
+// ─────────────────────────────────────────
+int main() {
+    int grid[SIZE][SIZE] = {};
+    int choice;
+
+    cout << "================================\n";
+    cout << "        Sudoku Solver           \n";
+    cout << "================================\n";
+    cout << "  1. Enter your own puzzle\n";
+    cout << "  2. Use sample puzzle (demo)\n";
+    cout << "================================\n";
+    cout << "Enter choice: ";
+    cin >> choice;
+
+    if (choice == 1) {
+        inputGrid(grid);
+    } else {
+        loadSamplePuzzle(grid);
+        cout << "\n✅ Sample puzzle loaded!\n";
+    }
+
+    cout << "\n📋 Puzzle to solve:";
+    printGrid(grid);
+
+    // Validate the puzzle before solving
+    if (!isInitialGridValid(grid)) {
+        cout << "❌ The puzzle you entered is invalid! Check for duplicate numbers.\n";
+        return 1;
+    }
+
+    cout << "\n⏳ Solving...\n";
+
+    if (solveSudoku(grid)) {
+        cout << "\n✅ Puzzle Solved!\n";
+        printGrid(grid);
+    } else {
+        cout << "\n❌ This puzzle has no solution!\n";
+    }
+
+    return 0;
+}
